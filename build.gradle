@@ -6,10 +6,19 @@ repositories {
 }
 
 dependencies {
+  def gwt = "2.8.0"
   def errai = "4.0.0.CR1"
+
+  providedCompile "com.google.gwt:gwt-user:$gwt"
+  providedCompile "com.google.gwt:gwt-dev:$gwt"
+  runtime "com.google.gwt:gwt-servlet:$gwt"
 
   compile "org.jboss.errai:errai-javaee-all:$errai"
   compile "org.jboss.errai:errai-jboss-as-support:$errai"
+}
+
+def allowCliOverride(prop, defaultVal) {
+  hasProperty(prop) ? getProperty(prop) : defaultVal
 }
 
 task deploy(type: Copy) {
@@ -20,3 +29,48 @@ deploy.dependsOn assemble
 
 task cleanErrai { doLast { delete "${projectDir}.errai" } }
 clean.dependsOn cleanErrai
+
+ext {
+  gwtDevModules = ["demo.errai.jpa.App"]
+  gwtModules = gwtDevModules
+  gwtLogLevel = allowCliOverride("gwtLogLevel", "INFO")
+  gwtLocalWorkers = "2"
+  gwtBuildDir = "$buildDir/gwt"
+  gwtExtraDir = "$buildDir/gwt-extra"
+}
+
+task gwtCompile(type:JavaExec) {
+  inputs.file(sourceSets.main.java.srcDirs).skipWhenEmpty()
+  inputs.dir sourceSets.main.output.resourcesDir
+
+  outputs.dir buildDir
+  outputs.upToDateSpec = new org.gradle.api.specs.AndSpec()
+
+  doFirst { file(buildDir).mkdirs() }
+
+  main = "com.google.gwt.dev.Compiler"
+
+  classpath {
+    [
+      sourceSets.main.java.srcDirs,           // Java source
+      sourceSets.main.output.resourcesDir,    // Generated resources
+      sourceSets.main.output.classesDir,      // Generated classes
+      sourceSets.main.compileClasspath,       // Deps
+    ]
+  }
+
+  args =
+    [
+      gwtModules,
+      "-war", gwtBuildDir,
+      "-logLevel", gwtLogLevel,
+      "-localWorkers", gwtLocalWorkers,
+      "-compileReport",
+      "-generateJsInteropExports",
+      "-extra", gwtExtraDir
+    ].flatten()
+}
+war.dependsOn gwtCompile
+war {
+  from gwtBuildDir
+}
