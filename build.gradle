@@ -87,17 +87,20 @@ clean.doFirst {
 
 task deploy(type: Copy) {
   doFirst { file(deployDir).mkdirs() }
+  doFirst { delete "$deployDir/app.war" }
   into "$deployDir/app.war"
   with war
 }
 deploy.dependsOn war
 
+task stop {
+  doLast { exec("docker-compose -f src/main/docker/wildfly.yml down") }
+}
+
 task start {
   doFirst { file(deployDir).mkdirs() }
   doLast { exec("docker-compose -f src/main/docker/wildfly.yml up -d") }
 }
+start.dependsOn stop
+start.dependsOn clean
 start.finalizedBy deploy
-
-task stop {
-  doLast { exec("docker-compose -f src/main/docker/wildfly.yml down") }
-}
