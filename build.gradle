@@ -1,6 +1,24 @@
 apply plugin: "war"
 apply plugin: "eclipse"
 
+ext {
+  gwtDevModules = ["demo.errai.App"]
+  gwtModules = gwtDevModules
+  gwtLogLevel = allowCliOverride("gwtLogLevel", "INFO")
+  gwtLocalWorkers = "2"
+  gwtBuildDir = "$buildDir/gwt"
+  gwtExtraDir = "$buildDir/gwt-extra"
+  deployDir = "$projectDir/war"
+}
+
+def allowCliOverride(prop, defaultVal) {
+  hasProperty(prop) ? getProperty(prop) : defaultVal
+}
+
+def exec(cmd) {
+  cmd.execute().text.trim()
+}
+
 repositories {
   mavenCentral()
 }
@@ -24,28 +42,6 @@ dependencies {
   providedCompile "com.github.gwtmaterialdesign:gwt-material-themes:$gmd"
   providedCompile "com.github.gwtmaterialdesign:gwt-material-jquery:$gmdJquery"
   providedCompile "com.github.gwtmaterialdesign:gwt-material-table:$gmdTable"
-}
-
-def allowCliOverride(prop, defaultVal) {
-  hasProperty(prop) ? getProperty(prop) : defaultVal
-}
-
-task deploy(type: Copy) {
-  into "$projectDir/war/app.war"
-  with war
-}
-deploy.dependsOn assemble
-
-task cleanErrai { doLast { delete "${projectDir}.errai" } }
-clean.dependsOn cleanErrai
-
-ext {
-  gwtDevModules = ["demo.errai.App"]
-  gwtModules = gwtDevModules
-  gwtLogLevel = allowCliOverride("gwtLogLevel", "INFO")
-  gwtLocalWorkers = "2"
-  gwtBuildDir = "$buildDir/gwt"
-  gwtExtraDir = "$buildDir/gwt-extra"
 }
 
 task gwtCompile(type:JavaExec) {
@@ -82,4 +78,26 @@ task gwtCompile(type:JavaExec) {
 war.dependsOn gwtCompile
 war {
   from gwtBuildDir
+}
+
+clean.doLast {
+  delete "${projectDir}.errai" }
+  delete "${projectDir}/war" }
+}
+
+task deploy(type: Copy) {
+  doFirst { file(deployDir).mkdirs() }
+  into "$deployDir/app.war"
+  with war
+}
+deploy.dependsOn war
+
+task start {
+  doFirst { file(deployDir).mkdirs() }
+  doLast { exec("docker-compose -f src/main/docker/wildfly.yml up -d") }
+}
+start.finalizedBy deploy
+
+task stop {
+  doLast { exec("docker-compose -f src/main/docker/wildfly.yml down") }
 }
