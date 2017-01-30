@@ -40,7 +40,7 @@ task cleanErrai { doLast { delete "${projectDir}.errai" } }
 clean.dependsOn cleanErrai
 
 ext {
-  gwtDevModules = ["demo.errai.jpa.App"]
+  gwtDevModules = ["demo.errai.App"]
   gwtModules = gwtDevModules
   gwtLogLevel = allowCliOverride("gwtLogLevel", "INFO")
   gwtLocalWorkers = "2"

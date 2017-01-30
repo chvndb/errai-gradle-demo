@@ -1,4 +1,4 @@
-package demo.errai.jpa.client.view;
+package demo.errai.client.view;
 
 import java.util.Comparator;
 import java.util.List;
@@ -10,7 +10,7 @@ import javax.persistence.EntityManager;
 import com.google.gwt.user.client.ui.Composite;
 import com.google.gwt.user.client.ui.Panel;
 
-import demo.errai.jpa.client.model.Person;
+import demo.errai.client.model.Person;
 import gwt.material.design.client.constants.IconType;
 import gwt.material.design.client.data.AbstractDataView;
 import gwt.material.design.client.data.component.RowComponent;

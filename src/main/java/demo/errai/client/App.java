@@ -1,4 +1,4 @@
-package demo.errai.jpa.client;
+package demo.errai.client;
 
 import javax.annotation.PostConstruct;
 import javax.inject.Inject;
@@ -8,7 +8,7 @@ import org.jboss.errai.ioc.client.api.EntryPoint;
 
 import com.google.gwt.user.client.ui.RootPanel;
 
-import demo.errai.jpa.client.view.PersonTable;
+import demo.errai.client.view.PersonTable;
 import gwt.material.design.client.ui.MaterialSplashScreen;
 
 @EntryPoint
