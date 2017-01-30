@@ -80,8 +80,8 @@ war {
   from gwtBuildDir
 }
 
-clean.doLast {
-  delete "${projectDir}.errai"
+clean.doFirst {
+  delete "${projectDir}/.errai"
   delete "${projectDir}/war"
 }
 
