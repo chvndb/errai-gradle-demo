@@ -2,6 +2,11 @@
   <inherits name="com.google.gwt.user.User" />
   <inherits name="com.google.gwt.resources.Resources" />
   
+  <inherits name="gwt.material.design.GwtMaterialBasicWithJQuery"/>
+  <inherits name="gwt.material.design.GwtMaterialTable"/>
+  <inherits name="gwt.material.design.addins.GwtMaterialAddins"/>
+  <inherits name="gwt.material.design.themes.ThemeBlue"/>
+  
   <inherits name="org.jboss.errai.enterprise.All" />
   <inherits name="org.jboss.errai.validation.Validation" />
   <inherits name="org.hibernate.validator.HibernateValidator" />

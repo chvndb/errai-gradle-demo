@@ -8,6 +8,9 @@ repositories {
 dependencies {
   def gwt = "2.8.0"
   def errai = "4.0.0.CR1"
+  def gmd = "2.0-rc3"
+  def gmdJquery = "1.0-rc3"
+  def gmdTable = "1.0-rc3"
 
   providedCompile "com.google.gwt:gwt-user:$gwt"
   providedCompile "com.google.gwt:gwt-dev:$gwt"
@@ -15,6 +18,12 @@ dependencies {
 
   compile "org.jboss.errai:errai-javaee-all:$errai"
   compile "org.jboss.errai:errai-jboss-as-support:$errai"
+
+  providedCompile "com.github.gwtmaterialdesign:gwt-material:$gmd"
+  providedCompile "com.github.gwtmaterialdesign:gwt-material-addins:$gmd"
+  providedCompile "com.github.gwtmaterialdesign:gwt-material-themes:$gmd"
+  providedCompile "com.github.gwtmaterialdesign:gwt-material-jquery:$gmdJquery"
+  providedCompile "com.github.gwtmaterialdesign:gwt-material-table:$gmdTable"
 }
 
 def allowCliOverride(prop, defaultVal) {
