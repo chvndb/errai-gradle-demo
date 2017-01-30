@@ -81,8 +81,8 @@ war {
 }
 
 clean.doLast {
-  delete "${projectDir}.errai" }
-  delete "${projectDir}/war" }
+  delete "${projectDir}.errai"
+  delete "${projectDir}/war"
 }
 
 task deploy(type: Copy) {
