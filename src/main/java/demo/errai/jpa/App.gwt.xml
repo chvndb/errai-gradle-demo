@@ -1,0 +1,7 @@
+<module rename-to="app">
+  <inherits name="com.google.gwt.user.User" />
+  <inherits name="com.google.gwt.resources.Resources" />
+
+  <source path="client" />
+  <source path="shared" />
+</module>
