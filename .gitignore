@@ -1,5 +1,6 @@
 bin
 build
+war
 .classpath
 .errai
 .gradle
