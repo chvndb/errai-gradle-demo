@@ -1,2 +1,22 @@
-apply plugin: "java"
+apply plugin: "war"
 apply plugin: "eclipse"
+
+repositories {
+  mavenCentral()
+}
+
+dependencies {
+  def errai = "4.0.0.CR1"
+
+  compile "org.jboss.errai:errai-javaee-all:$errai"
+  compile "org.jboss.errai:errai-jboss-as-support:$errai"
+}
+
+task deploy(type: Copy) {
+  into "$projectDir/war/app.war"
+  with war
+}
+deploy.dependsOn assemble
+
+task cleanErrai { doLast { delete "${projectDir}.errai" } }
+clean.dependsOn cleanErrai
