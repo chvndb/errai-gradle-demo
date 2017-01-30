@@ -1,6 +1,13 @@
 <module rename-to="app">
   <inherits name="com.google.gwt.user.User" />
   <inherits name="com.google.gwt.resources.Resources" />
+  
+  <inherits name="org.jboss.errai.enterprise.All" />
+  <inherits name="org.jboss.errai.validation.Validation" />
+  <inherits name="org.hibernate.validator.HibernateValidator" />
+  
+  <set-property name="gwt.logging.enabled" value="TRUE"/>
+  <set-property name="gwt.logging.logLevel" value="INFO"/>
 
   <source path="client" />
   <source path="shared" />
