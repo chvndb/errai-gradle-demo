@@ -8,15 +8,15 @@ import org.jboss.errai.ioc.client.api.EntryPoint;
 
 import com.google.gwt.user.client.ui.RootPanel;
 
-import gwt.material.design.client.ui.MaterialLabel;
+import demo.errai.jpa.client.view.PersonTable;
 import gwt.material.design.client.ui.MaterialSplashScreen;
 
 @EntryPoint
 public class App {
   MaterialSplashScreen splash = new MaterialSplashScreen();
-  MaterialLabel label = new MaterialLabel("Hello from chvndb !!");
 
   @Inject RootPanel root;
+  @Inject PersonTable personTable;
 
   public App() {
     RootPanel.get().add(splash);
@@ -25,7 +25,7 @@ public class App {
 
   @PostConstruct
   void construct() {
-    root.add(label);
+    root.add(personTable);
   }
 
   @AfterInitialization
