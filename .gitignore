@@ -1,6 +1,7 @@
 bin
 build
 .classpath
+.errai
 .gradle
 .project
 .settings
