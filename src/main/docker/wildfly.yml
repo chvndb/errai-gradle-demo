@@ -1,0 +1,17 @@
+version: "2"
+
+services:
+  wildfly:
+    build: ./wildfly
+    image: demo_wildfly
+    container_name: demo_wildfly
+    volumes:
+      - ../../../war:/opt/jboss/wildfly/standalone/deployments:rw
+    ports:
+      - 8080:8080
+    networks:
+      - demo
+
+networks:
+  demo:
+    external: true
