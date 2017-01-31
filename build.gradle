@@ -55,17 +55,14 @@ task compileGwt(type:JavaExec) {
   // NOTE: the generated classes need be added to the final WAR
   jvmArgs = ["-Derrai.server.classOutput=${erraiBuildDir}"]
 
-  classpath {
-    [
+  classpath {[
       sourceSets.main.java.srcDirs,
       sourceSets.main.output.resourcesDir,
       sourceSets.main.output.classesDir,
       sourceSets.main.compileClasspath
-    ]
-  }
+  ]}
 
-  args =
-    [
+  args = [
       gwtModules,
       "-war", gwtBuildDir,
       "-logLevel", gwtLogLevel,
@@ -73,7 +70,7 @@ task compileGwt(type:JavaExec) {
       "-failOnError",
       "-generateJsInteropExports",
       "-extra", gwtExtraDir
-    ].flatten()
+  ].flatten()
 }
 compileGwt.dependsOn compileJava
 war.dependsOn compileGwt
