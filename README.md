@@ -1,3 +1,5 @@
+# WORK IN PROGRESS
+
 # Errai Demo
 
 This application demonstrates how Errai can be setup using Gradle and Docker. 
