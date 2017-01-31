@@ -8,6 +8,9 @@ ext {
   gwtLocalWorkers = "2"
   gwtBuildDir = "$buildDir/gwt"
   gwtExtraDir = "$buildDir/gwt-extra"
+  gwtDevDir = "$buildDir/gwt-dev"
+  gwtDevWorkDir = "$buildDir/gwt-dev-work"
+  gwtUnitCacheDir = "$buildDir/gwt-unitcache"
   erraiBuildDir = "$buildDir/errai"
   deployDir = "$projectDir/war"
 }
@@ -46,9 +49,9 @@ dependencies {
 }
 
 task compileGwt(type:JavaExec) {
-  outputs.dir gwtBuildDir
-
   main = "com.google.gwt.dev.Compiler"
+
+  outputs.dir gwtBuildDir
 
   // Avoids generated errai classes to be added to the build/classes folder 
   // which in turn would trigger a redundant recompile even when nothing changes
@@ -56,20 +59,20 @@ task compileGwt(type:JavaExec) {
   systemProperties["errai.server.classOutput"] = erraiBuildDir
 
   classpath {[
-      sourceSets.main.java.srcDirs,
-      sourceSets.main.output.resourcesDir,
-      sourceSets.main.output.classesDir,
-      sourceSets.main.compileClasspath
+    sourceSets.main.java.srcDirs,
+    sourceSets.main.output.resourcesDir,
+    sourceSets.main.output.classesDir,
+    sourceSets.main.compileClasspath
   ]}
 
   args = [
-      gwtModules,
-      "-war", gwtBuildDir,
-      "-logLevel", gwtLogLevel,
-      "-localWorkers", gwtLocalWorkers,
-      "-failOnError",
-      "-generateJsInteropExports",
-      "-extra", gwtExtraDir
+    gwtModules,
+    "-war", gwtBuildDir,
+    "-logLevel", gwtLogLevel,
+    "-localWorkers", gwtLocalWorkers,
+    "-failOnError",
+    "-generateJsInteropExports",
+    "-extra", gwtExtraDir
   ].flatten()
 }
 compileGwt.dependsOn compileJava
@@ -77,6 +80,31 @@ war.dependsOn compileGwt
 war {
   from gwtBuildDir
   from erraiBuildDir
+}
+
+task gwtDev(type:JavaExec) {
+  main = "com.google.gwt.dev.codeserver.CodeServer"
+
+  systemProperties["gwt.persistentunitcachedir"] = gwtUnitCacheDir
+
+  doFirst { file(gwtDevWorkDir).mkdirs() }
+
+  classpath {[
+    sourceSets.main.java.srcDirs,
+    sourceSets.main.output.resourcesDir,
+    sourceSets.main.output.classesDir,
+    sourceSets.main.compileClasspath
+  ]}
+
+  args = [
+    gwtDevModules,
+    "-logLevel", gwtLogLevel,
+    "-launcherDir", gwtDevDir,
+    "-workDir", gwtDevWorkDir,
+    "-style", "Pretty",
+    "-generateJsInteropExports",
+    "-bindAddress", "0.0.0.0"
+  ].flatten()
 }
 
 clean.doFirst {
