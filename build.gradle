@@ -53,7 +53,7 @@ task compileGwt(type:JavaExec) {
   // Avoids generated errai classes to be added to the build/classes folder 
   // which in turn would trigger a redundant recompile even when nothing changes
   // NOTE: the generated classes need be added to the final WAR
-  jvmArgs = ["-Derrai.server.classOutput=${erraiBuildDir}"]
+  systemProperties["errai.server.classOutput"] = erraiBuildDir
 
   classpath {[
       sourceSets.main.java.srcDirs,
