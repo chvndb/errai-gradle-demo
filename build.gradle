@@ -79,7 +79,8 @@ compileGwt.dependsOn compileJava
 war.dependsOn compileGwt
 war {
   from gwtBuildDir
-  from erraiBuildDir
+  from (erraiBuildDir) { into "WEB-INF/classes" }
+  rootSpec.exclude("**/client/**") // exclude gwt specific client-side source code from the final war
 }
 
 task gwtDev(type:JavaExec) {
