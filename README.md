@@ -15,6 +15,7 @@ The Gradle compilation outputs an exploded WAR which is then mounted by a docker
 Start the application server and compile the source code:
 
     % ./gradlew start
+    
     % open http://localhost:8080/app
 
 Stop the application server:
