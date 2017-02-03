@@ -1,6 +1,7 @@
 bin
 build
 war
+.vscode
 .classpath
 .errai
 .gradle
