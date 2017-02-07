@@ -1,21 +1,29 @@
 # WORK IN PROGRESS
 
-# Errai Demo
+# Errai & Gradle Demo
 
-This application demonstrates how Errai can be setup using Gradle and Docker. 
+Errai demo running on a Wildfly server.
+
+## General
+
+This application demonstrates how GWT & Errai can be setup using Gradle. 
 The Gradle compilation outputs an exploded WAR which is then mounted by a dockerized Wildfly instance.
 
-## Prerequisites
+This demo only depends on build-in gradle plugins. 
+The main reason is to explain how the gradle build system can be configured for a specific purpose.
 
-* docker
-* docker-compose
+## Dependencies
+
+* JDK 8
+* Docker >= 1.13.0
+* docker-compose >= 1.10.0
 
 ## Build and Deploy
 
 Start the application server and compile the source code:
 
     % ./gradlew start
-    
+
     % open http://localhost:8080/app
 
 Stop the application server:
