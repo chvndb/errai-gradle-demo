@@ -11,7 +11,8 @@ ext {
   gwtDevWorkDir = "$buildDir/gwt-dev-work"
   gwtUnitCacheDir = "$buildDir/gwt-unitcache"
   erraiBuildDir = "$buildDir/errai"
-  deployDir = "$projectDir/war"
+  explodedWarDir = "app.war"
+  deployDir = "$projectDir/war/$explodedWarDir"
 }
 
 def allowCliOverride(prop, defaultVal) {
@@ -83,8 +84,8 @@ task gwtCompile(type:JavaExec) {
     "-extra", gwtExtraDir
   ].flatten()
 }
-// makes sure that the client-side classes are generated and output resources available
-// needed to trigger the Errai generators
+// makes sure that the generated client-side classes and output resources
+// are available needed to trigger all the Errai generators
 gwtCompile.dependsOn classes
 
 war.dependsOn gwtCompile
@@ -111,7 +112,7 @@ task gwtDev(type:JavaExec) {
   args = [
     gwtDevModules,
     "-logLevel", gwtLogLevel,
-    "-launcherDir", gwtDevDir,
+    "-launcherDir", deployDir,
     "-workDir", gwtDevWorkDir,
     "-style", "Pretty",
     "-generateJsInteropExports",
@@ -121,8 +122,8 @@ task gwtDev(type:JavaExec) {
 
 task deploy(type: Copy) {
   doFirst { file(deployDir).mkdirs() }
-  doFirst { delete "$deployDir/app.war" }
-  into "$deployDir/app.war"
+  doFirst { delete deployDir }
+  into deployDir
   with war
 }
 deploy.dependsOn war
