@@ -64,22 +64,27 @@ clean.doFirst {
   delete deploy.dir.war
 }
 
-// merge the resource outputs with the class outputs to ensure errai required
-// property files are picked up correctly, e.g. ErraiApp.propeties
-sourceSets.main.output.resourcesDir = sourceSets.main.output.classesDir
+// merge GWT inputs (source, classes, resources) to ensure Errai required property files are picked
+// up correctly, e.g. ErraiApp.propeties, and Errai generators are triggered
+task gwtClasses(type: Copy, dependsOn: classes) {
+  includeEmptyDirs false
+  from sourceSets.main.output.resourcesDir
+  from(sourceSets.main.java.srcDirs) {
+    include "**/**.gwt.xml"
+    include "**/client/**"
+    include "**/shared/**"
+  }
+  from(sourceSets.main.output.classesDir) {
+    include "**/client/**"
+    include "**/shared/**"
+  }
+  into gwt.dir.input
+}
 
-task gwtCompile(type:JavaExec) {
+task gwtCompile(type: JavaExec, dependsOn: gwtClasses) {
   main = "com.google.gwt.dev.Compiler"
-
-  outputs.dir gwt.dir.output
-
-  // avoids generated errai classes to be added to the build/classes folder
-  // which in turn would trigger a redundant recompile even when nothing changes
-  // NOTE: the generated classes need be added to the final WAR
-  systemProperties["errai.server.classOutput"] = errai.dir.build
-
   classpath {[ gwt.dir.input, sourceSets.main.compileClasspath ]}
-
+  outputs.dir gwt.dir.output
   args = [
     gwt.modules.prod,
     "-war", gwt.dir.output,
@@ -89,10 +94,11 @@ task gwtCompile(type:JavaExec) {
     "-generateJsInteropExports",
     "-extra", gwt.dir.extra
   ].flatten()
+  // avoid generated errai classes to be added to the build/classes folder
+  // which in turn would trigger a redundant recompile even when nothing changes
+  // NOTE: the generated classes need be added to the final WAR
+  systemProperties["errai.server.classOutput"] = errai.dir.output
 }
-// makes sure that the generated client-side classes and output resources
-// are available needed to trigger all the Errai generators
-gwtCompile.dependsOn classes
 
 war.dependsOn gwtCompile
 war {
@@ -101,15 +107,10 @@ war {
   rootSpec.exclude("**/client/**")                   // exclude GWT specific client-side java source code
 }
 
-task gwtDev(type:JavaExec) {
+task gwtDev(type: JavaExec, dependsOn: gwtCompile) {
   main = "com.google.gwt.dev.codeserver.CodeServer"
-
-  systemProperties["gwt.persistentunitcachedir"] = gwt.dir.unitcache
-
-  doFirst { file(gwt.dir.dev).mkdirs() }
-
   classpath {[ gwt.dir.input, sourceSets.main.compileClasspath ]}
-
+  doFirst { file(gwt.dir.dev).mkdirs() }
   args = [
     gwt.modules.dev,
     "-logLevel", gwt.log.dev,
@@ -119,24 +120,22 @@ task gwtDev(type:JavaExec) {
     "-generateJsInteropExports",
     "-bindAddress", "0.0.0.0"
   ].flatten()
+  systemProperties["gwt.persistentunitcachedir"] = gwt.dir.unitcache
 }
 
-task redeploy(type: Copy) {
+task redeploy(type: Copy, dependsOn: war) {
   doFirst { file(deploy.dir.app).mkdirs() }
   doFirst { delete deploy.dir.app }
   into deploy.dir.app
   with war
 }
-redeploy.dependsOn war
 
 task stop {
   doLast { exec("docker-compose -f src/main/docker/wildfly.yml down") }
 }
 
-task start {
+task start(dependsOn: [stop, clean]) {
   doFirst { file(deploy.dir.app).mkdirs() }
   doLast { exec("docker-compose -f src/main/docker/wildfly.yml up -d") }
+  finalizedBy redeploy
 }
-start.dependsOn stop
-start.dependsOn clean
-start.finalizedBy deploy
