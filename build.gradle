@@ -1,56 +1,67 @@
+buildscript {
+  ext.overridable = { prop, defaultVal ->
+    hasProperty(prop) ? getProperty(prop) : defaultVal
+  }
+
+  ext.exec = { cmd ->
+    cmd.execute().text.trim()
+  }
+
+  ext.versions = [ gmd: [:] ]
+  versions.gwt          =   "2.8.0"
+  versions.errai        =   "4.0.0.CR1"
+  versions.gmd.core     =   "2.0-rc3"
+  versions.gmd.jquery   =   "1.0-rc3"
+  versions.gmd.table    =   "1.0-rc3"
+
+  ext.gwt =  [ modules: [:], dir: [:], log: [:] ]
+  gwt.workers           =   "2"
+  gwt.modules.dev       =   "demo.errai.App"
+  gwt.modules.prod      =   "demo.errai.App"
+  gwt.dir.build         =   "${buildDir}/gwt"
+  gwt.dir.input         =   "${gwt.dir.build}/input"
+  gwt.dir.output        =   "${gwt.dir.build}/output"
+  gwt.dir.extra         =   "${gwt.dir.build}/extra"
+  gwt.dir.dev           =   "${gwt.dir.build}/dev"
+  gwt.dir.unitcache     =   "${gwt.dir.build}/unitcache"
+  gwt.log.dev           =   overridable("gwtLogDev", "INFO")
+  gwt.log.prod          =   overridable("gwtLogProd", "INFO")
+
+  ext.errai =  [ dir: [:] ]
+  errai.dir.work        =   "${projectDir}/.errai"
+  errai.dir.build       =   "${buildDir}/errai"
+  errai.dir.output      =   "${errai.dir.build}/output"
+
+  ext.deploy =  [ dir: [:] ]
+  deploy.dir.war        =   "${projectDir}/war"
+  deploy.dir.app        =   "${deploy.dir.war}/${name}.war"
+}
+
 apply plugin: "war"
-
-ext {
-  gwtDevModules = ["demo.errai.App"]
-  gwtModules = gwtDevModules
-  gwtLogLevel = allowCliOverride("gwtLogLevel", "INFO")
-  gwtLocalWorkers = "2"
-  gwtBuildDir = "$buildDir/gwt"
-  gwtExtraDir = "$buildDir/gwt-extra"
-  gwtDevDir = "$buildDir/gwt-dev"
-  gwtDevWorkDir = "$buildDir/gwt-dev-work"
-  gwtUnitCacheDir = "$buildDir/gwt-unitcache"
-  erraiBuildDir = "$buildDir/errai"
-  explodedWarDir = "app.war"
-  deployDir = "$projectDir/war/$explodedWarDir"
-}
-
-def allowCliOverride(prop, defaultVal) {
-  hasProperty(prop) ? getProperty(prop) : defaultVal
-}
-
-def exec(cmd) {
-  cmd.execute().text.trim()
-}
+apply plugin: "eclipse"
 
 repositories {
   mavenCentral()
 }
 
 dependencies {
-  def gwt = "2.8.0"
-  def errai = "4.0.0.CR1"
-  def gmd = "2.0-rc3"
-  def gmdJquery = "1.0-rc3"
-  def gmdTable = "1.0-rc3"
+  providedCompile "com.google.gwt:gwt-user:$versions.gwt"
+  providedCompile "com.google.gwt:gwt-dev:$versions.gwt"
+  runtime "com.google.gwt:gwt-servlet:$versions.gwt"
 
-  providedCompile "com.google.gwt:gwt-user:$gwt"
-  providedCompile "com.google.gwt:gwt-dev:$gwt"
-  runtime "com.google.gwt:gwt-servlet:$gwt"
+  compile "org.jboss.errai:errai-javaee-all:$versions.errai"
+  compile "org.jboss.errai:errai-jboss-as-support:$versions.errai"
 
-  compile "org.jboss.errai:errai-javaee-all:$errai"
-  compile "org.jboss.errai:errai-jboss-as-support:$errai"
-
-  providedCompile "com.github.gwtmaterialdesign:gwt-material:$gmd"
-  providedCompile "com.github.gwtmaterialdesign:gwt-material-addins:$gmd"
-  providedCompile "com.github.gwtmaterialdesign:gwt-material-themes:$gmd"
-  providedCompile "com.github.gwtmaterialdesign:gwt-material-jquery:$gmdJquery"
-  providedCompile "com.github.gwtmaterialdesign:gwt-material-table:$gmdTable"
+  providedCompile "com.github.gwtmaterialdesign:gwt-material:$versions.gmd.core"
+  providedCompile "com.github.gwtmaterialdesign:gwt-material-addins:$versions.gmd.core"
+  providedCompile "com.github.gwtmaterialdesign:gwt-material-themes:$versions.gmd.core"
+  providedCompile "com.github.gwtmaterialdesign:gwt-material-jquery:$versions.gmd.jquery"
+  providedCompile "com.github.gwtmaterialdesign:gwt-material-table:$versions.gmd.table"
 }
 
 clean.doFirst {
-  delete "${projectDir}/.errai"
-  delete "${projectDir}/war"
+  delete errai.dir.work
+  delete deploy.dir.war
 }
 
 // merge the resource outputs with the class outputs to ensure errai required
@@ -60,28 +71,23 @@ sourceSets.main.output.resourcesDir = sourceSets.main.output.classesDir
 task gwtCompile(type:JavaExec) {
   main = "com.google.gwt.dev.Compiler"
 
-  outputs.dir gwtBuildDir
+  outputs.dir gwt.dir.output
 
   // avoids generated errai classes to be added to the build/classes folder
   // which in turn would trigger a redundant recompile even when nothing changes
   // NOTE: the generated classes need be added to the final WAR
-  systemProperties["errai.server.classOutput"] = erraiBuildDir
+  systemProperties["errai.server.classOutput"] = errai.dir.build
 
-  classpath {[
-    sourceSets.main.java.srcDirs,
-    sourceSets.main.output.resourcesDir,
-    sourceSets.main.output.classesDir,
-    sourceSets.main.compileClasspath
-  ]}
+  classpath {[ gwt.dir.input, sourceSets.main.compileClasspath ]}
 
   args = [
-    gwtModules,
-    "-war", gwtBuildDir,
-    "-logLevel", gwtLogLevel,
-    "-localWorkers", gwtLocalWorkers,
+    gwt.modules.prod,
+    "-war", gwt.dir.output,
+    "-logLevel", gwt.log.prod,
+    "-localWorkers", gwt.workers,
     "-failOnError",
     "-generateJsInteropExports",
-    "-extra", gwtExtraDir
+    "-extra", gwt.dir.extra
   ].flatten()
 }
 // makes sure that the generated client-side classes and output resources
@@ -90,50 +96,45 @@ gwtCompile.dependsOn classes
 
 war.dependsOn gwtCompile
 war {
-  from gwtBuildDir                                  // include GWT generated output files
-  from (erraiBuildDir) { into "WEB-INF/classes" }   // include Errai generated output files
-  rootSpec.exclude("**/client/**")                  // exclude GWT specific client-side java source code
+  from gwt.dir.output                                // include GWT generated output files
+  from (errai.dir.output) { into "WEB-INF/classes" } // include Errai generated output files
+  rootSpec.exclude("**/client/**")                   // exclude GWT specific client-side java source code
 }
 
 task gwtDev(type:JavaExec) {
   main = "com.google.gwt.dev.codeserver.CodeServer"
 
-  systemProperties["gwt.persistentunitcachedir"] = gwtUnitCacheDir
+  systemProperties["gwt.persistentunitcachedir"] = gwt.dir.unitcache
 
-  doFirst { file(gwtDevWorkDir).mkdirs() }
+  doFirst { file(gwt.dir.dev).mkdirs() }
 
-  classpath {[
-    sourceSets.main.java.srcDirs,
-    sourceSets.main.output.resourcesDir,
-    sourceSets.main.output.classesDir,
-    sourceSets.main.compileClasspath
-  ]}
+  classpath {[ gwt.dir.input, sourceSets.main.compileClasspath ]}
 
   args = [
-    gwtDevModules,
-    "-logLevel", gwtLogLevel,
-    "-launcherDir", deployDir,
-    "-workDir", gwtDevWorkDir,
+    gwt.modules.dev,
+    "-logLevel", gwt.log.dev,
+    "-launcherDir", deploy.dir.app,
+    "-workDir", gwt.dir.dev,
     "-style", "Pretty",
     "-generateJsInteropExports",
     "-bindAddress", "0.0.0.0"
   ].flatten()
 }
 
-task deploy(type: Copy) {
-  doFirst { file(deployDir).mkdirs() }
-  doFirst { delete deployDir }
-  into deployDir
+task redeploy(type: Copy) {
+  doFirst { file(deploy.dir.app).mkdirs() }
+  doFirst { delete deploy.dir.app }
+  into deploy.dir.app
   with war
 }
-deploy.dependsOn war
+redeploy.dependsOn war
 
 task stop {
   doLast { exec("docker-compose -f src/main/docker/wildfly.yml down") }
 }
 
 task start {
-  doFirst { file(deployDir).mkdirs() }
+  doFirst { file(deploy.dir.app).mkdirs() }
   doLast { exec("docker-compose -f src/main/docker/wildfly.yml up -d") }
 }
 start.dependsOn stop
