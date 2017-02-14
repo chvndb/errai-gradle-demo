@@ -1,3 +1,6 @@
+import java.nio.file.Files
+import java.nio.file.Paths
+
 buildscript {
   ext.overridable = { prop, defaultVal ->
     hasProperty(prop) ? getProperty(prop) : defaultVal
@@ -19,6 +22,7 @@ buildscript {
   gwt.modules.dev       =   "demo.errai.App"
   gwt.modules.prod      =   "demo.errai.App"
   gwt.dir.build         =   "${buildDir}/gwt"
+  gwt.dir.deps          =   "${gwt.dir.build}/deps"
   gwt.dir.input         =   "${gwt.dir.build}/input"
   gwt.dir.output        =   "${gwt.dir.build}/output"
   gwt.dir.extra         =   "${gwt.dir.build}/extra"
@@ -64,8 +68,48 @@ clean.doFirst {
   delete deploy.dir.war
 }
 
-// merge GWT inputs (source, classes, resources) to ensure Errai required property files are picked
-// up correctly, e.g. ErraiApp.propeties, and Errai generators are triggered
+// [WINDOWS]
+//  A shell command has a limited maximum size.
+//  Deep dependency chains require large paths for gwt{Compiler,CodeServer}.
+//  Therefore, soft symbolic links are generated to all the dependencies.
+//  The output directory can then be added to the classpath.
+// [NOTE]
+//  Soft symbolic links are used because Windows NTFS does not allow hard links
+//  to be removed when in use. Hard links cause build failures as the Gradle daemon keeps a
+//  reference to the files it copies. This blocks the deamon from overwriting them in a subsequent build.
+// [WARNING]
+//  To create symbolic links in Windows, the shell needs to be run with administator privileges,
+//  _even_ if you're a user with administrator privileges.
+task gwtDependencies() {
+  inputs.files configurations.compile
+  inputs.files configurations.providedCompile
+  outputs.dir gwt.dir.deps
+  doFirst { file(gwt.dir.deps).mkdirs() }
+  doLast {
+    def target = Paths.get(gwt.dir.deps)
+    def deps = configurations.compile.files + configurations.providedCompile.files
+    def valid = deps.collect { file -> createSymbolicLink(file.toPath(), target) }
+    // Remove dependencies which no longer exist. Having this avoids the need to depend on task
+    // "clear", but still correctly recognizes when dependencies have been removed and a
+    // recompile should be triggered.
+    fileTree(gwt.dir.deps).minus(valid).each { file ->
+      logger.debug("Removed unreferenced cached dependency: " + file)
+      delete file
+    }
+  }
+}
+
+def createSymbolicLink(def origin, def target) {
+  def fileName = origin.fileName
+  def link = target.resolve(fileName)
+  // [WARNING] dependencies with the same filename but different content will be skipped because of this.
+  if(!link.toFile().exists())
+    Files.createSymbolicLink(link, origin)
+  link.toFile()
+}
+
+// Merge GWT inputs (source, classes, resources) to ensure Errai required property files are picked
+// up correctly, e.g. ErraiApp.propeties, and Errai generators are triggered.
 task gwtClasses(type: Copy, dependsOn: classes) {
   includeEmptyDirs false
   from sourceSets.main.output.resourcesDir
@@ -81,9 +125,21 @@ task gwtClasses(type: Copy, dependsOn: classes) {
   into gwt.dir.input
 }
 
-task gwtCompile(type: JavaExec, dependsOn: gwtClasses) {
+// [WINDOWS]
+//  The classpath closure of the JavaExec task can not be used, because it
+//  refuses to accept directory wildcards in Windows.
+//  This would generate a "Could not normalize path" error.
+//  Therefore, the classpath must be provided as a JVM argument using "--classpath"
+def gwtClasspath() {
+  [gwt.dir.input, "${gwt.dir.deps}/*"].flatten().join(":")
+}
+
+task gwtCompile(type: JavaExec, dependsOn: [gwtClasses, gwtDependencies]) {
   main = "com.google.gwt.dev.Compiler"
-  classpath {[ gwt.dir.input, sourceSets.main.compileClasspath ]}
+  jvmArgs = ["-classpath", gwtClasspath()]
+  maxHeapSize = "1024M"
+  inputs.files(gwtClasses.destinationDir).skipWhenEmpty()
+  inputs.files gwtDependencies.destinationDir
   outputs.dir gwt.dir.output
   args = [
     gwt.modules.prod,
@@ -94,14 +150,15 @@ task gwtCompile(type: JavaExec, dependsOn: gwtClasses) {
     "-generateJsInteropExports",
     "-extra", gwt.dir.extra
   ].flatten()
-  // avoid generated errai classes to be added to the build/classes folder
-  // which in turn would trigger a redundant recompile even when nothing changes
-  // NOTE: the generated classes need be added to the final WAR
+  // Avoid generated errai classes to be added to the build/classes folder
+  // which in turn would trigger a redundant recompile even when nothing changes.
+  // [NOTE] The generated classes need be added to the final WAR.
   systemProperties["errai.server.classOutput"] = errai.dir.output
 }
 
 war.dependsOn gwtCompile
 war {
+  includeEmptyDirs false
   from gwt.dir.output                                // include GWT generated output files
   from (errai.dir.output) { into "WEB-INF/classes" } // include Errai generated output files
   rootSpec.exclude("**/client/**")                   // exclude GWT specific client-side java source code
@@ -109,7 +166,7 @@ war {
 
 task gwtDev(type: JavaExec, dependsOn: gwtCompile) {
   main = "com.google.gwt.dev.codeserver.CodeServer"
-  classpath {[ gwt.dir.input, sourceSets.main.compileClasspath ]}
+  jvmArgs = ["-classpath", gwtClasspath()]
   doFirst { file(gwt.dir.dev).mkdirs() }
   args = [
     gwt.modules.dev,
