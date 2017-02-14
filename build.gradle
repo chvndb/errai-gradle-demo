@@ -17,8 +17,9 @@ buildscript {
   versions.gmd.jquery   =   "1.0-rc3"
   versions.gmd.table    =   "1.0-rc3"
 
-  ext.gwt =  [ modules: [:], dir: [:], log: [:] ]
+  ext.gwt =  [ modules: [:], dir: [:] ]
   gwt.workers           =   "2"
+  gwt.log               =   overridable("gwtLog", "INFO")
   gwt.modules.dev       =   "demo.errai.App"
   gwt.modules.prod      =   "demo.errai.App"
   gwt.dir.build         =   "${buildDir}/gwt"
@@ -28,8 +29,6 @@ buildscript {
   gwt.dir.extra         =   "${gwt.dir.build}/extra"
   gwt.dir.dev           =   "${gwt.dir.build}/dev"
   gwt.dir.unitcache     =   "${gwt.dir.build}/unitcache"
-  gwt.log.dev           =   overridable("gwtLogDev", "INFO")
-  gwt.log.prod          =   overridable("gwtLogProd", "INFO")
 
   ext.errai =  [ dir: [:] ]
   errai.dir.work        =   "${projectDir}/.errai"
@@ -144,7 +143,7 @@ task gwtCompile(type: JavaExec, dependsOn: [gwtClasses, gwtDependencies]) {
   args = [
     gwt.modules.prod,
     "-war", gwt.dir.output,
-    "-logLevel", gwt.log.prod,
+    "-logLevel", gwt.log,
     "-localWorkers", gwt.workers,
     "-failOnError",
     "-generateJsInteropExports",
@@ -170,7 +169,7 @@ task gwtDev(type: JavaExec, dependsOn: gwtCompile) {
   doFirst { file(gwt.dir.dev).mkdirs() }
   args = [
     gwt.modules.dev,
-    "-logLevel", gwt.log.dev,
+    "-logLevel", gwt.log,
     "-launcherDir", deploy.dir.app,
     "-workDir", gwt.dir.dev,
     "-style", "Pretty",
