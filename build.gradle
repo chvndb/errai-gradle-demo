@@ -139,7 +139,7 @@ task gwtCompile(type: JavaExec, dependsOn: [gwtClasses, gwtDependencies]) {
   jvmArgs = ["-classpath", gwtClasspath()]
   maxHeapSize = "1024M"
   inputs.files(gwtClasses.destinationDir).skipWhenEmpty()
-  inputs.files gwtDependencies.destinationDir
+  inputs.files gwt.dir.deps
   outputs.dir gwt.dir.output
   args = [
     gwt.modules.prod,
