@@ -53,9 +53,7 @@ dependencies {
   providedCompile "com.google.gwt:gwt-dev:$versions.gwt"
   runtime "com.google.gwt:gwt-servlet:$versions.gwt"
 
-  compile "org.jboss.errai:errai-javaee-all:$versions.errai", {
-    exclude group: "asm"
-  }
+  compile "org.jboss.errai:errai-javaee-all:$versions.errai", { exclude group: "asm" }
   compile "org.jboss.errai:errai-jboss-as-support:$versions.errai"
 
   providedCompile "com.github.gwtmaterialdesign:gwt-material:$versions.gmd.core"
